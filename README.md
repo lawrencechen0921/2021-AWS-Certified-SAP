@@ -4,7 +4,6 @@
 ![](https://i.imgur.com/gGhpx76.png)
 
 
-## 準備時間軸
 ```mermaid
 graph LR
 A[證照類型選擇] -->B(考題主軸分佈比例)
