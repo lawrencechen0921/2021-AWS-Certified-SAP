@@ -4,15 +4,11 @@
 ![](https://i.imgur.com/gGhpx76.png)
 
 
-```mermaid
-graph LR
-A[證照類型選擇] -->B(考題主軸分佈比例)
-    B --> C{AWS Certification免費課程}
-    C -->|必看| D[依照官方給的資源做學習] 
-    C -->|第三方| E[A Cloud Guru, Udemy, Whizlabs.....]
-    E --> F[前一週模擬考題]
-    G[考試流程準備圖]
-```
+## 準備時間軸
+
+<img width="745" alt="Screen Shot 2021-06-28 at 11 28 01 PM" src="https://user-images.githubusercontent.com/50194219/123662931-7d944700-d868-11eb-9f4c-19ad769aa66f.png">
+
+
 ## Identity & Federation
 
 ### IAM
