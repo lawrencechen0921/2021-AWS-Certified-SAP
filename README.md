@@ -1,8 +1,5 @@
 # AWS Certified Solutions Architect Professional 佛心大補帖
-*一個人先給我一股伊雲谷股票(6689)><*[^一股] 
-[^一股]:一股會不會太少
 
-2021 7/14 Test Got Certification
 ## 考題配分占比
 ![](https://i.imgur.com/gGhpx76.png)
 
