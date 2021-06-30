@@ -9,15 +9,7 @@
 
 ## 準備時間軸
 
-```mermaid
-graph LR
-A[證照類型選擇] -->B(考題主軸分佈比例)
-    B --> C{AWS Certification免費課程}
-    C -->|必看| D[依照官方給的資源做學習] 
-    C -->|第三方| E[A Cloud Guru, Udemy, Whizlabs.....]
-    E --> F[前一週模擬考題]
-    G[考試流程準備圖]
-```
+
 
 ## Identity & Federation
 
