@@ -1072,34 +1072,33 @@ VPC Basics:
 
 
 
-#### 專有名詞特區
+## 專有名詞特區
 
-- What is CDC?(不是美國疾病管制與預防中心歐)
+### What is CDC?(不是美國疾病管制與預防中心歐)
 Change data capture(CDC)tracks change in a source dataset and automatically transfer those changes to a target database.
 
-- What is TDE?
+### What is TDE?
 Transparent Data Encryption(often abbreviated to TDE)is a technology employed by Microsoft, IBM and Oracle to encypt database files.
 
-- Why We need external ID? Cuz Confused Deputy
+### Why We need external ID? Cuz Confused Deputy
 In information security, the confused deputy problem is often cited as an example of why capability-based security is important. A confused deputy is a legitimate, more privileged computer program that is tricked by another program into misusing its authority on the system. It is a specific type of privilege escalation.
 
 
-- Principle of least privilege
+### Principle of least privilege
 In information security, computer science, and other fields, the principle of least privilege (PoLP), also known as the principle of minimal privilege or the principle of least authority, requires that in a particular abstraction layer of a computing environment, every module (such as a process, a user, or a program, depending on the subject) must be able to access only the information and resources that are necessary for its legitimate purpose.
 
-- AD-Compatibel API: Samba
+### AD-Compatibel API: Samba
 Samba，是種用來讓UNIX系列的作業系統與微軟Windows作業系統的SMB/CIFS（Server Message Block/Common Internet File System）網路協定做連結的自由軟體。第三版不僅可存取及分享SMB的資料夾及印表機，本身還可以整合入Windows Server的網域，扮演為網域控制站（Domain Controller）以及加入Active Directory成員。簡而言之，此軟體在Windows與UNIX系列操作系统之間搭起一座橋樑，讓兩者的資源可互通有無
 
-- What is an identity provider (IdP)?
+### What is an identity provider (IdP)?
 An identity provider (IdP or IDP) stores and manages users' digital identities. Think of an IdP as being like a guest list, but for digital and cloud-hosted applications instead of an event. An IdP may check user identities via username-password combinations and other factors, or it may simply provide a list of user identities that another service provider (like an SSO) checks.
 IdPs are not limited to verifying human users. Technically, an IdP can authenticate any entity connected to a network or a system, including computers and other devices. Any entity stored by an IdP is known as a "principal" (instead of a "user"). However, IdPs are most often used in cloud computing to manage user identities.
 
-- What is WORM(Write once Read Many) model?
+### What is WORM(Write once Read Many) model?
 1. S3 object lock
 2. Glacier Vault lock
 
-- CORS
-
+### CORS
 跨來源資源共用（Cross-Origin Resource Sharing (CORS)）是一種使用額外 HTTP 標頭令目前瀏覽網站的使用者代理 (en-US)取得存取其他來源（網域）伺服器特定資源權限的機制。當使用者代理請求一個不是目前文件來源——例如來自於不同網域（domain）、通訊協定（protocol）或通訊埠（port）的資源時，會建立一個跨來源 HTTP 請求（cross-origin HTTP request）。
 
 舉個跨來源請求的例子：http://domain-a.com HTML 頁面裡面一個 <img> 標籤的 src 屬性 (en-US)載入來自 http://domain-b.com/image.jpg 的圖片。現今網路上許多頁面所載入的資源，如 CSS 樣式表、圖片影像、以及指令碼（script）都來自與所在位置分離的網域，如內容傳遞網路（content delivery networks, CDN）。
