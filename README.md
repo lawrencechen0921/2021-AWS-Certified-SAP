@@ -1,23 +1,14 @@
 # AWS Certified Solutions Architect Professional 佛心大補帖
-*一個人先給我一股伊雲谷股票(6689)><*[^一股] 
-[^一股]:一股會不會太少
 
-2021 7/14 Test Got Certification
 ## 考題配分占比
 ![](https://i.imgur.com/gGhpx76.png)
 
 
 ## 準備時間軸
 
-```mermaid
-graph LR
-A[證照類型選擇] -->B(考題主軸分佈比例)
-    B --> C{AWS Certification免費課程}
-    C -->|必看| D[依照官方給的資源做學習] 
-    C -->|第三方| E[A Cloud Guru, Udemy, Whizlabs.....]
-    E --> F[前一週模擬考題]
-    G[考試流程準備圖]
-```
+
+<img width="745" alt="Screen Shot 2021-06-28 at 11 28 01 PM" src="https://user-images.githubusercontent.com/50194219/123662931-7d944700-d868-11eb-9f4c-19ad769aa66f.png">
+
 
 ## Identity & Federation
 
