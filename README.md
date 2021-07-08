@@ -1,8 +1,5 @@
 # AWS Certified Solutions Architect Professional 佛心大補帖
-*一個人先給我一股伊雲谷股票(6689)><*[^一股] 
-[^一股]:一股會不會太少
 
-2021 7/14 Test Got Certification
 ## 考題配分占比
 ![](https://i.imgur.com/gGhpx76.png)
 
@@ -1738,6 +1735,7 @@ IdPs are not limited to verifying human users. Technically, an IdP can authentic
 
 基於安全性考量，程式碼所發出的跨來源 HTTP 請求會受到限制。例如，XMLHttpRequest 及 Fetch 都遵守同源政策（same-origin policy）。這代表網路應用程式所使用的 API 除非使用 CORS 標頭，否則只能請求與應用程式相同網域的 HTTP 資源。
 
+
 ### What are Cookies?
 
 HTTP cookies are essential to the modern Internet but a vulnerability to your privacy. As a necessary part of web browsing, HTTP cookies help web developers give you more personal, convenient website visits. Cookies let websites remember you, your website logins, shopping carts and more. But they can also be a treasure trove of private info for criminals to spy on.
@@ -1778,3 +1776,4 @@ Kerberos was designed to provide secure authentication to services over an insec
 Data in transit, or data in motion, is data actively moving from one location to another such as across the internet or through a private network. Data protection in transit is the protection of this data while it’s traveling from network to network or being transferred from a local storage device to a cloud storage device – wherever data is moving, effective data protection measures for in transit data are critical as data is often considered less secure while in motion.
 
 Data at rest is data that is not actively moving from device to device or network to network such as data stored on a hard drive, laptop, flash drive, or archived/stored in some other way. Data protection at rest aims to secure inactive data stored on any device or network. While data at rest is sometimes considered to be less vulnerable than data in transit, attackers often find data at rest a more valuable target than data in motion. The risk profile for data in transit or data at rest depends on the security measures that are in place to secure data in either state.
+
