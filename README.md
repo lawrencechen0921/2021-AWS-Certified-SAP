@@ -7,10 +7,10 @@
 ![](https://i.imgur.com/gGhpx76.png)
 
 
-## 準備時間軸
 
 
 
+---
 ## Identity & Federation
 
 ### IAM
@@ -276,85 +276,441 @@
 - No trust relationship
 
 ### AWS Organizations
+- Master accounts must invite Child Accounts
+- Master accounts can create Child Accounts
+- Master can access child accounts using:
+  - CloudFormation StackSets to create IAM roles in target accounts
+  - Assume the roles using the STS Cross Account capability
+- Strategy to create a dedicated account for logging or security
+- API is available to automate AWS account creation
+- Integration with AWS Single Sign-On (SSO)
 
+### AWS Organizations - Features
+- Consolidated billing features:
+  - Consolidated Billing across all accounts - single payment method
+  - Pricing benefits from aggregated usage (volume discount for EC2, S3…)
+- All Features (Default):
+  - Includes consolidated billing features
+  - You can use SCP
+  - Invited accounts must approve enabling all features
+  - Ability to apply an SCP to prevent member accounts from leaving the org
+  - Can’t switch back to Consolidated Billing Features only
+### Multi Account Strategies
+- Create accounts per department, per cost center, per dev / test / prod, based on regulatory restrictions (using SCP), for better resource isolation (ex: VPC), to have separate per-account service limits, isolated account for logging, 
+- Multi Account vs One Account Multi VPC
+- Use tagging standards for billing purposes
+- Enable CloudTrail on all accounts, send logs to central S3 account
+- Send CloudWatch Logs to central logging account
+- Establish Cross Account Roles for Admin purposes
+
+### Service Control Policies (SCP)
+- Whitelist or blacklist IAM actions
+- Applied at the OU or Account level
+- Does not apply to the Master Account
+- SCP is applied to all the Users and Roles of the Account, including Root user
+- The SCP does not affect service-linked roles
+  - Service-linked roles enable other AWS services to integrate with AWS Organizations 
+and can't be restricted by SCPs.
+- SCP must have an explicit Allow (does not allow anything by default)
+- Use cases:
+  - Restrict access to certain services (for example: can’t use EMR)
+  - Enforce PCI compliance by explicitly disabling services
+
+### AWS Organizations – Reserved Instances
+- For billing purposes, the consolidated billing feature of AWS Organizations treats all the accounts in the organization as one account.
+- This means that all accounts in the organization can receive the hourly cost benefit of Reserved Instances that are purchased by any other account.
+- The payer account (master account) of an organization can turn off Reserved Instance (RI) discount and Savings Plans discount sharing for any accounts in that organization, including the payer account
+- This means that RIs and Savings Plans discounts aren't shared between any accounts that have sharing turned off. 
+- To share an RI or Savings Plans discount with an account, both accounts must have sharing turned on
 ### AWS Resource Access Manager
-- When you want to share VPC with multiple account think about this service.
+- Share AWS resources that you own with other AWS accounts
+- Share with any account or within your Organization
+- Avoid resource duplication!
+- VPC Subnets: 
+  - allow to have all the resources launched in the same subnets
+  - must be from the same AWS Organizations. 
+  - Cannot share security groups and default VPC
+  - Participants can manage their own resources in there
+  - Participants can't view, modify, delete resources that belong to other participants or the owner
+- AWS Transit Gateway
+- Route53 Resolver Rules
+- License Manager Configurations
 ### AWS Single Sign on
-![](https://i.imgur.com/OJnRqIu.jpg)
-
+- Centrally manage Single Sign-On to access multiple accounts and 3rd-party business applications. 
+- Integrated with AWS Organizations
+- Supports SAML 2.0 markup
+- Integration with on-premise Active Directory
+- Centralized permission management
+- Centralized auditing with CloudTrail
 
 ### Summary
+- Users and Accounts all in AWS
+- AWS Organizations
+- Federation with SAML
+- Federation without SAML with a custom IdP (GetFederationToken)
+- Federation with SSO for multiple accounts with AWS Organizations
+- Web Identity Federation (not recommended) 
+- Cognito for most web and mobile applications (has anonymous mode, MFA) 
+- Active Directory on AWS:
+  - Microsoft AD: standalone or setup trust AD with on-premise, has MFA, seamless join, RDS integration
+  - AD Connector: proxy requests to on-premise
+  - Simple AD: standalone & cheap AD-compatible with no MFA, no advanced capabilities
+- Single Sign On to connect to multiple AWS Accounts (Organization) and SAML apps
 
 
-
----
 ## Security
 
 ### CloudTrail
-past 90 days activity
+- Provides governance, compliance and audit for your AWS Account
+- CloudTrail is enabled by default!
+- Get an history of events / API calls made within your AWS Account by:
+- Console
+- SDK
+- CLI
+- AWS Services
+- Can put logs from CloudTrail into CloudWatch Logs
+- If a resource is deleted in AWS, look into CloudTrail first!
 
-#### KMS
-Use Encrypt and Decrypt API but have to check IAM permission.
-#### Parameter Store
+### CloudTrail continued… 
+- CloudTrail console shows the past 90 days of activity
+- The default UI only shows “Create”, “Modify” or “Delete” events
+- CloudTrail Trail:
+  - Get a detailed list of all the events you choose
+  - Can include events happening at the object level in S3
+  - Ability to store these events in S3 for further analysis
+  - Can be region specific or be global & include global events (IAM, etc)
 
-#### Secrets Manager
+### CloudTrail: How to react to events the fastest?
+Overall, CloudTrail may take up to 15 minutes to deliver events
+- CloudWatch Events:
+  - Can be triggered for any API call in CloudTrail
+  - The fastest, most reactive way
+- CloudTrail Delivery in CloudWatch Logs:
+  - Events are streamed
+  - Can perform a metric filter to analyze occurrences and detect anomalies
+- CloudTrail Delivery in S3:
+  - Events are delivered every 5 minutes
+  - Possibility of analyzing logs integrity, deliver cross account, long-term storage
+### KMS
+- Anytime you hear “encryption” for an AWS service, it’s most likely KMS
+- Easy way to control access to your data, AWS manages keys for us
+- Fully integrated with IAM for authorization
+- Seamlessly integrated into:
+  - Amazon EBS: encrypt volumes
+  - Amazon S3: Server side encryption of objects
+  - Amazon Redshift: encryption of data
+  - Amazon RDS: encryption of data
+  - Amazon SSM: Parameter store 
+  - Etc… 
+- But you can also use the CLI / SDK
+### AWS KMS 101
+- The value in KMS is that the CMK used to encrypt data can never be retrieved by the user, and the CMK can be rotated for extra security
+- Never ever store your secrets in plaintext, especially in your code!
+- Encrypted secrets can be stored in the code / environment variables
+- KMS can only help in encrypting up to 4KB of data per call
+- If data > 4 KB, use Envelope Encryption
+- To give access to KMS to someone:
+  - Make sure the Key Policy allows the user
+  - Make sure the IAM Policy allows the API calls
+- Track API calls made to KMS in CloudTrail
 
-#### RDS Security
+### Types of KMS Keys
+- Customer Manager CMK:
+  - Create, manage and use, can enable or disable
+  - Possibility of rotation policy (new key generated every year, old key preserved)
+  - Can add a key policy (resource policy)
+  - Leverage for envelope encryption
+- AWS managed CMK:
+  - Used by AWS service (aws/s3, aws/ebs, aws/redshift)
+  - Managed by AWS
+### Parameter Store
+- Secure storage for configuration and secrets
+- Optional Seamless Encryption using KMS
+- Serverless, scalable, durable, easy SDK, free
+- Version tracking of configurations / secrets
+- Configuration management using path & IAM
+- Notifications with CloudWatch Events
+- Integration with CloudFormation
+- Can retrieve secrets from Secrets Manager using the SSM Parameter Store API
+### Secrets Manager
+- Newer service, meant for storing secrets
+- Capability to force rotation of secrets every X days
+- Automate generation of secrets on rotation (uses Lambda)
+- Integration with Amazon RDS (MySQL, PostgreSQL, Aurora)
+- Secrets are encrypted using KMS
+- Mostly meant for RDS integration
+### RDS Security
+- KMS encryption at rest for underlying EBS volumes / snapshots
+- Transparent Data Encryption (TDE) for Oracle and SQL Server
+- SSL encryption to RDS is possible for all DB (in-flight)
+- IAM authentication for MySQL and PostgreSQL
+- Authorization still happens within RDS (not in IAM)
+- Can copy an un-encrypted RDS snapshot into an encrypted one
+- CloudTrail cannot be used to track queries made within RDS
+### SSL Encryption, SNI(Server Name Indication) & MITM
+SSL/TLS - Basics 
+- SSL refers to Secure Sockets Layer, used to encrypt connections
+- TLS refers to Transport Layer Security, which is a newer version
+- Nowadays, TLS certificates are mainly used, but people still refer as SSL 
+- Public SSL certificates are issued by Certificate Authorities (CA)
+- Comodo, Symantec, GoDaddy, GlobalSign, Digicert, Letsencrypt, etc… 
+- SSL certificates have an expiration date (you set) and must be renewed
+### SSL – Server Name Indication (SNI)
+ - SNI solves the problem of loading multiple SSL certificates onto one web server (to serve multiple websites)
+- It’s a “newer” protocol, and requires the client to indicate the hostname of the target server in the initial SSL handshake
+- The server will then find the correct certificate, or return the default one
+Note:
+- Only works for ALB & NLB (newer generation), CloudFront
+- Does not work for CLB (older gen)
 
-#### SSL Encryption, SNI(Server Name Indication) & MITM
+### SSL – Man in the Middle Attack How to prevent
 
-#### AWS Certificate Manager(Regional Service)
-Integrate with Load Balancers(including the one created by EB)
-Cloudfront distribution
-APIs on API Gateway
-#### CloudHSM(Hardware Security Module)
-Managed Key by customer
+- Don’t use public-facing HTTP, use HTTPS (meaning, use SSL/TLS certificates)
+- Use a DNS that has DNSSEC
+  - To send a client to a pirate server, a DNS response needs to be “forged” by a server which intercepts them
+  - It is possible to protect your domain name by configuring DNSSEC
+  - Amazon Route 53 supports DNSSEC for domain registration. 
+  - Route 53 supports DNSSEC for DNS service as of December 2020 (using KMS)
+  - You could also run a custom DNS server on Amazon EC2 for example (Bind is the most popular, dnsmasq, KnotDNS, PowerDNS).
+### AWS Certificate Manager(Regional Service)
 
+- To host public SSL certificates in AWS, you can:
+  - Buy your own and upload them using the CLI
+  - Have ACM provision and renew public SSL certificates for you (free of cost)
 
-#### Solution Architeture - SSL on ELB
+- ACM loads SSL certificates on the following integrations:
+  - Load Balancers (including the ones created by EB)
+  - CloudFront distributions
+  - APIs on API Gateways
 
-Offload SSL to CloudHSM(SSL acceleration)
-#### S3 security(4 methods you could use)
-SSE-S3
+- SSL certificates is overall a pain to manually manage, so ACM is great to leverage in your AWS infrastructure
 
-SSE-KMS
+### ACM – Good to know
+- Possibility of creating public certificates
+  - Must verify public DNS 
+  - Must be issued by a trusted public certificate authority (CA)
+- Possibility of creating private certificates
+  - For your internal applications
+  - You create your own private CA
+  - Your applications must trust your private CA
+- Certificate renewal:
+  - Automatically done if generated provisioned by ACM
+  - Any manually uploaded certificates must be renewed manually and re-uploaded
+- ACM is a regional service
+  - To use with a global application (multiple ALB for example), you need to issue an SSL certificate in each region where you application is deployed. 
+  - You cannot copy certs across regions
+### CloudHSM(Hardware Security Module)
+- KMS => AWS manages the software for encryption
+- CloudHSM => AWS provisions encryption hardware
+- Dedicated Hardware (HSM = Hardware Security Module)
+- You manage your own encryption keys entirely (not AWS)
+- HSM device is tamper resistant, FIPS 140-2 Level 3 compliance
+- Supports both symmetric and asymmetric encryption (SSL/TLS keys)
+- No free tier available
+- Must use the CloudHSM Client Software
+- Redshift supports CloudHSM for database encryption and key management
+- Good option to use with SSE-C encryption
 
-SSE-C(your own encryption keys)
+### Solution Architeture - SSL on ELB
+- There are 4 methods of encrypting objects in S3
+- SSE-S3: encrypts S3 objects using keys handled & managed by AWS
+- SSE-KMS: leverage AWS Key Management Service to manage encryption keys
+- SSE-C: when you want to manage your own encryption keys
+- Client Side Encryption 
+- Glacier: all data is AES-256 encrypted, key under AWS control
+### Encryption in transit (SSL)
 
-Client Side Encyption 
+- AWS S3 exposes:
+  - HTTP endpoint: non encrypted
+  - HTTPS endpoint: encryption in flight
+- You’re free to use the endpoint you want, but HTTPS is recommended
+- HTTPS is mandatory for SSE-C
+- Encryption in flight is also called SSL / TLS
 
-Glacier: all data is AES-256 encrypted, key under AWS control
+### Events in S3 Buckets
 
+- S3 Access Logs:
+  - Detailed records for the requests that are made to a bucket
+  - Might take hours to deliver
+  - Might be incomplete (best effort)
+- S3 Events Notifications:
+  - Receive notifications when certain events happen in your bucket
+  - E.g.: new objects created, object removal, restore objects, replication events
+  - Destinations: SNS, SQS queue, Lambda
+  - Typically delivered in seconds but can take minutes, notification for every object if versioning is enabled, else risk of one notification for two same object write done simultaneously
+- Trusted Advisor:
+  - Check the bucket permission (is the bucket public?)
+- CloudWatch Events:
+  - Need to enable CloudTrail object level logging on S3 first
+  - Target can be Lambda, SQS, SNS, etc…
+### S3 Security
+- User based
+  - IAM policies - which API calls should be allowed for a specific user from IAM console
 
-#### Network Security, DDOS, Shield & WAF
+- Resource Based
+  - Bucket Policies - bucket wide rules from the S3 console - allows cross account
+  - Object Access Control List (ACL) – finer grain
+  - Bucket Access Control List (ACL) – less common
 
-#### Blocking an IP address
+### S3 bucket policy
+- Use S3 bucket for policy to:
+  - Grant public access to the bucket
+  - Force objects to be encrypted at upload
+  - Grant access to another account (Cross Account)
+- Optional Conditions on:
+  - Public IP or Elastic IP (not on Private IP)
+  - Source VPC or Source VPC Endpoint – only works with VPC Endpoints
+  - CloudFront Origin Identity
+  - MFA
+
+### S3 pre-signed URLs
+
+- Can generate pre-signed URLs using SDK or CLI
+  - For downloads (easy, can use the CLI)
+  - For uploads (harder, must use the SDK)
+- Valid for a default of 3600 seconds, can change timeout with --expires-in [TIME_BY_SECONDS] argument
+- Users given a pre-signed URL inherit the permissions of the person who generated the URL for GET / PUT
+- Examples : 
+  - Allow only logged-in users to download a premium video on your S3 bucket
+  - Allow an ever changing list of users to download files by generating URLs dynamically
+  - Allow temporarily a user to upload a file to a precise location in our bucket
+
+### S3 Object Lock & Glacier Vault Lock
+- S3 Object Lock
+  - Adopt a WORM (Write Once Read Many) model
+  - Block an object version deletion for a specified amount of time
+- Glacier Vault Lock
+  - Adopt a WORM (Write Once Read Many) model
+  - Lock the policy for future edits (can no longer be changed)
+  - Helpful for compliance and data retention
+### Network Security, DDOS, Shield & WAF
+- Security Groups 
+  - Attached to ENI (Elastic Network Interfaces) – EC2, RDS, Lambda in VPC, etc
+  - Are stateful (any traffic in is allowed to go out, any traffic out can go back in)
+  - Can reference by CIDR and security group id 
+  - Supports security group references for VPC peering 
+  - Default: inbound denied, outbound all allowed
+ - NACL (Network ACL): 
+   - Attached at the subnet level 
+   - Are stateless (inbound and outbound rules apply for all traffic) 
+   - Can only reference a CIDR range (no hostname)
+   - Default: allow all inbound, allow all outbound 
+   - New NACL: denies all inbound, denies all outbound 
+ - Host Firewall 
+   - Software based, highly customizable
+ 
+### Type of Attacks on your infrastructure
+- Distributed Denial of Service (DDoS):
+  - When your service is unavailable because it’s receiving too many requests
+  - SYN Flood (Layer 4): send too many TCP connection requests
+  - UDP Reflection (Layer 4): get other servers to send many big UDP requests
+  - DNS flood attack: overwhelm the DNS so legitimate users can’t find the site
+  - Slow Loris attack: a lot of HTTP connections are opened and maintained
+- Application level attacks: 
+  - more complex, more specific (HTTP level)
+  - Cache bursting strategies: overload the backend database by invalidating cache
+### DDoS Protection on AWS
+- AWS Shield Standard: protects against DDoS attack for your website and applications, for all customers at no additional costs
+- AWS Shield Advanced: 24/7 premium DDoS protection
+- AWS WAF: Filter specific requests based on rules
+- CloudFront and Route 53: 
+  - Availability protection using global edge network
+  - Combined with AWS Shield, provides DDoS attack mitigation at the edge
+- Be ready to scale – leverage AWS Auto Scaling
+- Separate static resources (S3 / CloudFront) from dynamic ones (EC2 / ALB)
+- Read the whitepaper for details: 
+https://d1.awsstatic.com/whitepapers/Security/DDoS_White_Paper.pdf
+### AWS Shield
+- AWS Shield Standard:
+  - Free service that is activated for every AWS customer
+  - Provides protection from attacks such as SYN/UDP Floods, Reflection attacks and other layer 3/layer 4 attacks
+- AWS Shield Advanced: 
+  - Optional DDoS mitigation service ($3,000 per month per organization) 
+  - Protect against more sophisticated attack on Amazon EC2, Elastic Load Balancing (ELB), Amazon CloudFront, AWS Global Accelerator, and Route 53
+  - 24/7 access to AWS DDoS response team (DRP)
+  - Protect against higher fees during usage spikes due to DDoS
+### AWS WAF – Web Application Firewall
+- Protects your web applications from common web exploits (Layer 7)
+- Deploy on Application Load Balancer (localized rules) 
+- Deploy on API Gateway (rules running at the regional or edge level)
+- Deploy on CloudFront (rules globally on edge locations)
+  - Used to front other solutions: CLB, EC2 instances, custom origins, S3 websites)
+- WAF is not for DDoS protection
+- Define Web ACL (Web Access Control List):
+  - Rules can include: IP addresses, HTTP headers, HTTP body, or URI strings
+  - Protects from common attack - SQL injection and Cross-Site Scripting (XSS)
+  - Size constraints, Geo match
+  - Rate-based rules (to count occurrences of events)
+### AWS Firewall Manager
+- Manage rules in all accounts of an AWS Organization
+- Common set of security rules
+- WAF rules (Application Load Balancer, API Gateways, CloudFront)
+- AWS Shield Advanced (ALB, CLB, Elastic IP, CloudFront)
+- Security Groups for EC2 and ENI resources in VPC
+### Blocking an IP address
 ALB have security group as well
 NLB didn't have security group 
 If you use Cloudfront to route your internet, NACL is not useful
 because cloudfront is outside of VPC! So you could use WAF or Geo-Restriction to restrict it.
 
+### AWS Inspector
+- Only for EC2 instances (started from an AMI)
+- Analyze the running OS against known vulnerabilities
+- Analyze against unintended network accessibility
+- AWS Inspector Agent must be installed on OS in EC2 instances
+- Define template (rules package, duration, attributes, SNS topics)
+- No own custom rules possible – only use AWS managed rules
+- After the assessment, you get a report with a list of vulnerabilities
+### AWS Config
+- Helps with auditing and recording compliance of your AWS resources
+- Helps record configurations and changes over time
+- AWS Config Rules does not prevent actions from happening (no deny)
+- Questions that can be solved by AWS Config: 
+  - Is there unrestricted SSH access to my security groups?
+  - Do my buckets have any public access?
+  - How has my ALB configuration changed over time?
+- You can receive alerts (SNS notifications) for any changes
+- AWS Config is a per-region service
+- Can be aggregated across regions and accounts
 
+### AWS Config Rules
+- Can use AWS managed config rules (over 75)
+- Can make custom config rules (must be defined in AWS Lambda)
+  - Evaluate if each EBS disk is of type gp2
+  - Evaluate if each EC2 instance is t2.micro
+- Rules can be evaluated / triggered:
+  - For each config change
+  - And / or: at regular time intervals
+  - Can trigger CloudWatch Events if the rule is non-compliant (and chain with Lambda)
+- Rules can have auto remediations:
+  - If a resource is not compliant, you can trigger an auto remediation
+  - Define the remediation through SSM Automations
+  - Ex: remediate security group rules, stop instances with non-approved tags
+### AWS Managed Logs
+- Load Balancer Access Logs (ALB, NLB, CLB) => to S3
+  - Access logs for your Load Balancers
+- CloudTrail Logs => to S3 and CloudWatch Logs
+  - Logs for API calls made within your account 
+- VPC Flow Logs => to S3 and CloudWatch Logs
+  - Information about IP traffic going to and from network interfaces in yourVPC 
+- Route 53 Access Logs => to CloudWatch Logs
+  - Log information about the queries that Route 53 receives 
+- S3 Access Logs => to S3
+  - Server access logging provides detailed records for the requests that are made to a bucket 
+- CloudFront Access Logs => to S3
+  - Detailed information about every user request that CloudFront receives 
+- AWS Config => to S3
+### AWS GuardDuty
+- Intelligent Threat discovery to Protect AWS Account 
+- Uses Machine Learning algorithms, anomaly detection, 3rd party data
+- One click to enable (30 days trial), no need to install software
+- Input data includes:
+  - CloudTrail Logs: unusual API calls, unauthorized deployments
+  - VPC Flow Logs: unusual internal traffic, unusual IP address
+  - DNS Logs: compromised EC2 instances sending encoded data within DNS queries
+- Can setup CloudWatch Event rules to be notified in case of findings
+- CloudWatch Events rules can target AWS Lambda or SNS
 
-#### AWS Shield 
-
-
-#### AWS WAF(is not protect DDOS attack)
-
-#### AWS Firewall Manager 
-
-
-#### AWS Inspector(finished)
-
-#### AWS Config(finished)
-
-#### AWS Managed Logs(finished)
-
-#### AWS GuardDuty(finished)
-
-
-
----
 
 ## Compute & Load Balancing
 
@@ -362,7 +718,8 @@ because cloudfront is outside of VPC! So you could use WAF or Geo-Restriction to
 ![](https://i.imgur.com/VdxOZjf.jpg)
 
 
-### EC2
+### EC2 Instance Types - Main ones
+
 - Ｒ：applications that needs a lot of RAM -in memory caches
 - Ｃ: applications that needs good CPU  compute/database
 - Ｍ：applications that are balanced (think "medium")-general web-app
@@ -371,27 +728,91 @@ because cloudfront is outside of VPC! So you could use WAF or Geo-Restriction to
 - T2/T3: burstable instances(up to a capacity)
 - T2/T3 - unlimited: unlimited burst
 - On Demand Instances: short workload, predictable pricing, reliable.
-
 - Spot Instance: short workloads, for cheap, can lose instances(not reliable)
-
 - Reserved(Minimum 1 year)
   - Reserved Instances: long workloads
   - Convertible Reserved Instances: Long workloafs with flexible instances
   - Scheduled Reserved Instances: example-every Thursday between 3 and 6 pm
-  
 - Dedicated Instances: no other customers will share your hardware
 - Dedicated Hosts: book an entire physical server, control instance placement 
    - Greate for software license that operate at the core, or CPU socket level.
    - Can define host affinity so that instance reboots are lept on the same host.
-
 - RAM is note included in EC2
 
+### EC2 - Placement Groups
+- Control the EC2 Instance placement strategy using placement groups
+- Group Strategies: 
+  - Cluster—clusters instances into a low-latency group in a single Availability Zone
+  - Spread—spreads instances across underlying hardware (max 7 instances per group per AZ) – critical applications
+  - Partition—spreads instances across many different partitions (which rely on different sets of racks) within an AZ. Scales to 100s of EC2 instances per group (Hadoop, Cassandra, Kafka)
+- You can move an instance into or out of a placement group
+  - Your first need to stop it
+  - You then need to use the CLI (modify-instance-placement) 
+  - You can then start your instance
 
-### Auto Scaling
+### Placement Groups have different policy
 
-### Auto Scaling Update Strategies
+### EC2 Instance Launch Types
+- On Demand Instances: short workload, predictable pricing, reliable
+- Spot Instances: short workloads, for cheap, can lose instances (not reliable)
+- Reserved: (MINIMUM 1 year)
+  - Reserved Instances: long workloads 
+  - Convertible Reserved Instances: long workloads with flexible instances
+  - Scheduled Reserved Instances: example – every Thursday between 3 and 6 pm
+- Dedicated Instances: no other customers will share your hardware
+- Dedicated Hosts: book an entire physical server, control instance placement
+  - Great for software licenses that operate at the core, or CPU socket level
+  - Can define host affinity so that instance reboots are kept on the same host
+
+### EC2 included metrics
+- CPU: CPU Utilization + Credit Usage / Balance 
+- Network: Network In / Out 
+- Status Check: 
+  - Instance status = check the EC2 VM 
+  - System status = check the underlying hardware 
+- Disk: Read / Write for Ops / Bytes (only for instance store) 
+- RAM is NOT included in the AWS EC2 metric
+
+### Auto Scaling - Scaling Policies
+
+- Simple / Step Scaling: increase or decrease instances based on two CW alarms
+- Target Tracking: select a metric and a target value, ASG will smartly adjust
+  - Keep average CPU at 40%
+  - Keep request count per target at 1000
+- To scale based on RAM, you must use a Custom CloudWatch Metric
+### Auto Scaling - Good to know
+- Spot Fleet support (mix on Spot and On-Demand instances)
+- To upgrade an AMI, must update the launch configuration / template
+  - You must terminate instances manually
+  - CloudFormation can help with that step (we’ll see it later)
+- Scheduled scaling actions:
+  - Modify the ASG settings (min / max / desired) at pre-defined time
+  - Helpful when patterns are known in advance
+- Lifecycle Hooks:
+  - Perform actions before an instance is in service, or before it is terminated
+  - Examples: cleanup, log extraction, special health checks
+
+### Auto Scaling - Scaling Process
+- Launch: Add a new EC2 to the group, increasing the capacity
+- Terminate: Removes an EC2 instance from the group, decreasing its capacity.
+- HealthCheck: Checks the health of the instances
+- ReplaceUnhealthy:Terminate unhealthy instances and re-create them
+- AZRebalance: Balancer the number of EC2 instances across AZ
+- AlarmNotification: Accept notification from CloudWatch
+- ScheduledActions: Performs scheduled actions that you create.
+- AddToLoadBalancer: Adds instances to the load balancer or target group
+- We can suspend these processes!
 
 ### Spot Instance & Spot Fleet 
+- Can get a discount of up to 90% compared to On-demand
+- Define max spot price and get the instance while current spot price < max 
+  - The hourly spot price varies based on offer and capacity
+  - If the current spot price > your max price you can choose to stop or terminate your instance with a 2 minutes grace period.
+- Other strategy: Spot Block
+  - “block” spot instance during a specified time frame (1 to 6 hours) without interruptions
+  - In rare situations, the instance may be reclaimed
+- Used for batch jobs, data analysis, or workloads that are resilient to failures. 
+- Not great for critical jobs or databases
 
 ### ECS- Elastic Container Service
 
@@ -410,7 +831,15 @@ because cloudfront is outside of VPC! So you could use WAF or Geo-Restriction to
 ### Route53 part2
 
 ### Comparison of Solutions Architecture
----
+- EC2 on its own with Elastic IP
+- EC2 with Route53
+- ALB + ASG
+- ALB + ECS on EC2
+- ALB + ECS on Fargate
+- ALB +Lambda
+- API Gateway + Lambda
+- API Gateway + AWS Service
+- API Gateway + HTTP backend(ex:ALB)
 ## Storage
 
 ### EBS
@@ -564,6 +993,18 @@ picture
 
 ## Caching
 
+### Cloudfront-Part 1
+
+### Cloudfront-Part 2
+
+### Cloudfront-Part 3
+
+### Cloudfront-Part4
+
+### Amazon ElastiCache
+
+### Handling Extreme Rates
+
 ## Databases
 
 ### DynamoDB - in short
@@ -668,7 +1109,7 @@ ElasticCache- Store Aggregation Result, heavy-lifting computing
 #### Aurora
 
 
-## Service Communication
+## Service Communication(finished)
 
 ### Step Functions
 
@@ -685,19 +1126,199 @@ ElasticCache- Store Aggregation Result, heavy-lifting computing
 ### SNS
 
 
-## Data Engineering
+## Data Engineering(07/05)
+### Kinesis Data Streams
+- Kinesis is a managed “data streaming” service
+- Great for application logs, metrics, IoT, clickstreams
+- Great for “real-time” big data
+- Great for streaming processing frameworks (Spark, NiFi, etc...) - Data is automatically replicated synchronously to 3 AZ
+- **Kinesis Streams**: low latency streaming ingest at scale
+- **Kinesis Analytics**: perform real-time analytics on streams using SQL
+- **Kinesis Firehose**: load streams into S3, Redshift, ElasticSearch & Splunk
+
+### Kinesis Streams Overview
+- Streams are divided in order Shards/Partitions 
+- Data retention is 24 hours by default, can go up to 7 days 
+-  Ability to reprocess / replay data
+- Multiple applications can consume the same stream
+- Real-time processing with scale of throughput
+- Once data is inserted in Kinesis, it can’t be deleted (immutability)
+
+### Kinesis Streams Shards
+- One stream is made of many different shards
+- Billing is per shard provisioned, can have as many shards as you want 
+- Batching available or per message calls.
+- The number of shards can evolve over time (reshard / merge)
+- Records are ordered per shard
+### Kinesis Data Streams limit to know
+- Producer:
+  - 1MB/s or 1000 messages/s at write PER SHARD 
+  - “ProvisionedThroughputException” otherwise
+- Consumer Classic:
+  - 2MB/s at read PER SHARD across all consumers
+  - 5 API calls per second PER SHARD across all consumers
+- Consumer Enhanced Fan-Out:
+  - 2MB/s at read PER SHARD, PER ENHANCED CONSUMER 
+  - No API calls needed (push model)
+- Data Retention:
+  - 24 hours data retention by default 
+  - Can be extended to 7 days
+### Kinesis Data Firehose
+ - Fully Managed Service, no administration, automatic scaling, serverless 
+   - AWS: Redshift / Amazon S3 / ElasticSearch
+   - 3rd party partner: Splunk / MongoDB / DataDog / NewRelic /
+   - Custom: send to any HTTP endpoint
+- Pay for data going through Firehose
+- Near Real Time
+  - 60 seconds latency minimum for non full batches 
+  - Or minimum 32 MB of data at a time
+ - Supports many data formats, conversions, transformations, compression 
+ - Supports custom data transformations using AWS Lambda
+ - Can send failed or all data to a backup S3 bucket
+
+### Firehose Buffer Sizing
+- Firehose accumulates records in a buffer
+- The buffer is flushed based on time and size rules
+- Buffer Size (ex: 32MB): if that buffer size is reached, it’s flushed
+- Buffer Time (ex: 1 minute): if that time is reached, it’s flushed
+- Firehose can automatically increase the buffer size to increase throughput
+- High throughput => Buffer Size will be hit • Low throughput => Buffer Time will be hit
+- If real-time flush from Kinesis Data Streams to S3 is needed, use Lambda
+
+### Kinesis Data Streams vs Firehose
+- Kinesis Data Streams
+  - Streaming ser vice for ingest at scale
+  - Write custom code (producer /consumer)
+  - Real-time (~200 ms)
+  - Manage scaling (shard splitting / merging)
+  - Data storage for 1 to 365 days
+  - Supports replay capability
+### Kinesis Data Analytics
+
+### Streaming Architecture (very important)
+
+### AWS Batch
+
+### Amazon EMR
+
+### Running Jobs on AWS
+
+### Redshift 
+
+### Athena & Quicksight
+
+### Big Data Architeture
 
 
-## Monitoring
-
-## CloudWatch
 
 
+## Monitoring(finished)
 
-## Deploy and instance Management
+### CloudWatch
+
+### X-Ray
 
 
+## Deploy and instance Management(today)
+
+### Elastic Beanstalk
+
+### OpsWorks
+
+### CodeDeploy
+
+### Cloudformation
+
+### Service Catalog
+Less control of user, more control to admin
+### SAM - Serverless Application Model
+
+### Deployment Comparison
+
+### AWS System Manager --SSM(***)
+AWS-RunPatchBaseline applies to both Windows and Linux, and AWS-DefaultPatchBaseline is the name of the default Windows patch baseline
+
+Windows didn't have pathc line.
 ## Cost Control
+### Cost Allocation Tags
+- With Tags we can track resources that relate to each other
+- With Cost Allocation Tags we can enable detailed costing repor ts 
+- Just like Tags, but they show up as columns in Reports
+- AWS Generated Cost Allocation Tags
+  - Automatically applied to the resource you create
+  - Starts with Prefix aws: (e.g. aws: createdBy)
+  - They’re not applied to resources created before the activation
+- User tags
+  - Defined by the user
+  - Starts with Prefix user:
+- Cost Allocation Tags just appear in the Billing Console
+- Takes up to 24 hours for the tags to show up in the report
+
+### Trusted Advisor
+- No need to install anything – high level AWS account assessment
+- Analyze your AWS accounts and provides recommendation:  
+  - Cost Optimization & Recommendations
+  - Performance
+  - Security
+  - Fault Tolerance 
+  - Service Limits
+- Core Checks and recommendations – all customers
+- Can enable weekly email notification from the console
+- Full Trusted Advisor – Available for Business & Enterprise support plans 
+  - Ability to set CloudWatch alarms when reaching limits
+  - Programmatic Access using AWS Support API
+### Trusted Advisor Good To Know
+- Can check if an S3 bucket is made public
+   - But cannot check for S3 objects that are public inside of your bucket!
+   - Use CloudWatch Events / S3 Events instead
+
+- Service Limits
+  - Limits can only be monitored in Trusted Advisor (cannot be changed)
+  - Cases have to be created manually in AWS Support Centre to increase limits
+  - OR use the new AWS Service Quotas service (new service - has an API)
+### EC2 Launch Types & Saving Plan
+- On Demand Instances: short workload, predictable pricing, reliable
+- Spot Instances: short workloads, for cheap, can lose instances (not reliable)
+   - Reserved: (MINIMUM 1 year)
+   - Reserved Instances: long workloads
+   - Convertible Reserved Instances: long workloads with flexible instances
+   - Scheduled Reserved Instances: example – everyThursday between 3 and 6 pm
+- Dedicated Instances: no other customers will share your hardware
+- Dedicated Hosts: book an entire physical server, control instance placement
+- Great for software licenses that operate at the core, or socket level
+- Can define host affinity so that instance reboots are kept on the same host
+
+### Saving Plan
+- New pricing model to get a discount based on long-term usage
+- Commit to a certain type of usage: ex $10 per hour for 1 to 3 years 
+- Any usage beyond the savings plan is billed at the on-demand price
+- EC2 Instance Savings plan (up to 72% - same discount as Standard RIs)
+  - Select instance family (e.g. M5, C5...), and locked to a specific region
+  - Flexible across size (m5.large to m5.4xlarge), OS (Windows to Linux), tenancy (dedicated or default)
+- Compute Savings plan (up to 66% - same discount as Convertible RIs)
+  - Ability to move between instance family (move from C5 to M5), region (Ireland to US), compute type (EC2, Fargate, Lambda), OS & tenancy
+### S3 Cost Savings
+### S3 Storage Classes
+- Amazon S3 Standard - General Purpose
+- Amazon S3 Standard-Infrequent Access (IA) • Amazon S3 One Zone-Infrequent Access
+- Amazon S3 Intelligent Tiering
+- Amazon Glacier
+- Amazon Glacier Deep Archive
+- Amazon S3 Reduced Redundancy Storage (deprecated - omitted)
+
+### Other Cost Savings
+- S3 Select & Glacier Select: save in network and CPU cost 
+- S3 Lifecycle Rules: transition objects between tiers
+- Compress objects to save space
+- S3 Requester Pays:
+  - In general, bucket owners pay for all Amazon S3 storage and data transfer costs associated with their bucket
+  - With Requester Pays buckets, the requester instead of the bucket owner pays the cost of the request and the data download from the bucket
+  - The bucket owner always pays the cost of storing data
+  - Helpful when you want to share large datasets with other accounts
+  - If an IAM role is assumed, the owner account of that role pays for the request
+
+
+
 
 
 
@@ -1046,6 +1667,26 @@ VPC Basics:
 
 ## Other Services
 
+### other Services
+
+### CICD
+
+### Cloudsearch
+
+### Alexa for Business, Lex & Connect
+
+
+### AWS Rekognition
+
+### Kinesis Video Streams
+
+### AWS Workspaces and Amazon AppStream2.0
+
+### Amazon Mechanical Turk
+
+### AWS Device Farm
+
+
 
 
 
@@ -1096,3 +1737,44 @@ IdPs are not limited to verifying human users. Technically, an IdP can authentic
 舉個跨來源請求的例子：http://domain-a.com HTML 頁面裡面一個 <img> 標籤的 src 屬性 (en-US)載入來自 http://domain-b.com/image.jpg 的圖片。現今網路上許多頁面所載入的資源，如 CSS 樣式表、圖片影像、以及指令碼（script）都來自與所在位置分離的網域，如內容傳遞網路（content delivery networks, CDN）。
 
 基於安全性考量，程式碼所發出的跨來源 HTTP 請求會受到限制。例如，XMLHttpRequest 及 Fetch 都遵守同源政策（same-origin policy）。這代表網路應用程式所使用的 API 除非使用 CORS 標頭，否則只能請求與應用程式相同網域的 HTTP 資源。
+
+### What are Cookies?
+
+HTTP cookies are essential to the modern Internet but a vulnerability to your privacy. As a necessary part of web browsing, HTTP cookies help web developers give you more personal, convenient website visits. Cookies let websites remember you, your website logins, shopping carts and more. But they can also be a treasure trove of private info for criminals to spy on.
+
+
+
+### Web Indexing
+Web indexing, or internet indexing, comprises methods for indexing the contents of a website or of the Internet as a whole. Individual websites or intranets may use a back-of-the-book index, while search engines usually use keywords and metadata to provide a more useful vocabulary for Internet or onsite searching. With the increase in the number of periodicals that have articles online, web indexing is also becoming important for periodical websites.
+
+### What is cron job?
+我們通常會把一些每小時、每 6 小時、每日、每週、每月等等之類固定時間要做的工作丟到 Linux 系統的 crontab 中去執行，通常像是每日要統計昨天網站的活動資訊做數據分析之類的工作，這類的工作通常會花費比較久的時間
+
+若是事件驅動的行為，需要花比較多時間執行的話，我們會使用 Queue 的方式做處理，讓網站的回應時間變快，花時間的工作背景處理
+
+像是會員使用 Email 當作帳號註冊後，需要發送 Email 確認信給會員，以便確認這個 Email 真的存在
+
+但是因為這樣寄送 Email 的時間是不確定的時間（我們沒辦法控制使用者什麼時候來註冊）
+
+而且寄送 Email 的執行時間又特別的長，所以只能用 Queue 的方式來處理
+
+### What is Lazy Loading?
+Lazy loading (also called on-demand loading) is an optimization technique for the online content, be it a website or a web app.
+Instead of loading the entire web page and rendering it to the user in one go as in bulk loading, the concept of lazy loading assists in loading only the required section and delays the remaining, until it is needed by the user.
+
+### Compilance- What is HIPPA and HITECT?
+美國 1996 年健康保險流通與責任法案 (HIPAA) 法規的目的在於讓美國勞工在轉換工作或失業時更容易保留健康保險。法規的另一個目的是鼓勵採用電子健康記錄，透過改善資訊共享提升美國健保系統的效率和品質。
+
+隨著電子病歷使用的增加，HIPAA 也包含對受保護的醫療資訊 (PHI) 安全和隱私提供保護的規定。PHI 包含各式各樣的個人識別健康資料以及和健康相關的資料，包括保險和帳單資訊、診斷資料、臨床護理資料，及影像等實驗室結果和測試結果。HIPAA 法規適用的涵蓋實體包含直接處理病患和病患資料的醫院、醫療服務提供者、雇主贊助的醫療計劃、研究機構和保險公司。HIPAA 保護 PHI 的要求也擴及商業夥伴。
+
+經濟與臨床健康資訊科技法 (HITECH) 於 2009 擴大了 HIPAA 法規的範圍。HIPAA 和 HITECH 共同建立了一套聯邦標準，旨在保護 PHI 的安全和隱私。這些規定包含在稱為「簡化管理」的規則中。HIPAA 和 HITECH 強制推行使用和公開 PHI 的相關需求、保護 PHI 的適當安全措施、個人權利和管理責任。
+
+如需 HIPAA 和 HITECH 如何保護醫療資訊的詳細資訊，請參閱美國衛生與公眾服務部門的 Health Information Privacy 網頁。
+
+### What is Kerberos?
+Kerberos was designed to provide secure authentication to services over an insecure network. Kerberos uses tickets to authenticate a user and completely avoids sending passwords across the network. 
+
+### DEFINITION OF DATA IN TRANSIT VS. DATA AT REST
+Data in transit, or data in motion, is data actively moving from one location to another such as across the internet or through a private network. Data protection in transit is the protection of this data while it’s traveling from network to network or being transferred from a local storage device to a cloud storage device – wherever data is moving, effective data protection measures for in transit data are critical as data is often considered less secure while in motion.
+
+Data at rest is data that is not actively moving from device to device or network to network such as data stored on a hard drive, laptop, flash drive, or archived/stored in some other way. Data protection at rest aims to secure inactive data stored on any device or network. While data at rest is sometimes considered to be less vulnerable than data in transit, attackers often find data at rest a more valuable target than data in motion. The risk profile for data in transit or data at rest depends on the security measures that are in place to secure data in either state.
