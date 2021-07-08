@@ -3,7 +3,102 @@
 ## 考題配分占比
 ![](https://i.imgur.com/gGhpx76.png)
 
+## Preparation Focus Target
+**AWS Solutions Architect Professional Preparation~**
 
+1. Identity & Federation
+2. Security
+3. Compute & Load Balancing
+4. Storage
+5. Caching
+6. Databases
+7. Service Communication
+8. Data Engineering
+9. Monitoring
+10. Deployment and Instance Management
+11. Cost Control
+12. Migration(In progress on 06/02/21)
+13. VPC(Reviewed On 06/02/21)
+14. Other Services
+15. Exam Preparation
+
+Exam Tips:
+
+**One of the key tactic I followed when solving any question was to read the question and use paper and pencil to draw a rough architecture and focus on the areas that you need to improve**.
+
+Trust me, you will be able eliminate 2 answers for sure and then need to focus on only the other two. Read the other 2 answers to check the difference area and that would help you reach to the right answer or atleast have a 50% chance of getting it right.
+
+Focus on Scalability, HA, Disaster Recovery, Migration, Security, Cost Control
+
+Whitepapers are key to understand
+
+1. Security Processes
+2. Disaster Recovery (pilot light, warm standby, RTO and RPO)
+3. Cloud Migration(rehost, replatform, rearchitect)
+
+## **Migration & Transfer**
+
+1. Know Cloud Migration Serivce
+2. Know Database Migration Service ( Elasticsearch is supported by DMS)
+
+## **Management & Governance Tools**
+
+**AWS Organization Tools**
+
+1. Service Control Policies v.s IAM Policies
+2. Systems Manager (understand systems manager and its various service like parameter store, patch manager)
+3. Cloudwatch (Cloudwatch logs and Cloudwatch Subscription Filter)
+4. Cloudwatch Events
+5. Understand CloudTrail audit and governance
+6. Cloudformation in terms of Disaster Recovery to replicate environment across regions
+
+## **Networking & Content Delivery**
+
+1. VPC NACL Security Groups
+2. Route 53 policies
+3. Cloudfront caching
+4. API Gateway
+5. Private Link
+6. ALB ELB
+7. ELB + Auto Scaling
+
+## **Security & Identity & Compliance**
+
+1. IAM, WAF Shield DDOS
+
+## **Storage**
+
+1. This exam does not cover storage in deep
+2. S3 support (retrieval and partial content using Range Get requests)
+3. S3 data protection
+4. S3 subresources
+5. S3 disaster recovery ( cross region )
+6. EBS snapshots for backup and HA
+7. Storage Gateway for file based volumes and tape
+
+## **Database**
+
+1. RDS Multi-AZ vs Read Replicas (cross region and availability of data)
+2. Aurora DR & HA using Read replicas and Global Database
+3. DynamoDB (DynamoDB Streams for tracking changes, DynamoDB Auto Scaling & DAX for caching) improvement of selection of keys.
+
+## **Compute**
+
+1. EC2 instance Type, Auto Scaling
+2. Elastic Beanstalk mainly from the perspective of migration
+3. VPC & Lambda@Edge
+4. Not cover ECS and EKS
+
+## **Analytics**
+
+1. Understand Kinesis
+2. Different Between Kinesis Data Strems and Kinesis Firehose
+3. Know Elasticsearch provides a manages solution
+
+## Integration Tools
+
+1. SQS Standard and FIFO
+2. Cloudwatch integrate with SNS and Lambda can help in notification
 
 
 
