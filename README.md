@@ -1,28 +1,33 @@
 # AWS Certified Solutions Architect Professional 佛心大補帖
+*一個人先給我一股伊雲谷股票(6689)><*[^一股] 
+[^一股]:一股會不會太少
 
+2021 7/14 Test Got Certification
 ## 考題配分占比
 ![](https://i.imgur.com/gGhpx76.png)
 
 ## Preparation Focus Target
 **AWS Solutions Architect Professional Preparation~**
 
-1. Identity & Federation
-2. Security
-3. Compute & Load Balancing
-4. Storage
-5. Caching
-6. Databases
-7. Service Communication
-8. Data Engineering
-9. Monitoring
-10. Deployment and Instance Management
-11. Cost Control
-12. Migration(In progress on 06/02/21)
-13. VPC(Reviewed On 06/02/21)
-14. Other Services
-15. Exam Preparation
+1. Identity & Federation(review 2)(8/5 AD很容易忘記)
+2. Security(review2)(review 3)
+3. Compute & Load Balancing(review 2)(again)
+4. Storage(review 2)(review3)
+5. Caching(review2)(review3)
+6. Databases(review2)(review3)
+7. Service Communication（review2)
+8. Data Engineering(8/5)
+9. Monitoring(8/5)
+10. Deployment and Instance Management(review 2)
+11. Cost Control(review 2)
+12. Migration(review 2)(8/7 Again)
+13. VPC(Reviewed 2)(again)
+14. Other Services(8/5)
+15. Reviews all for 2 times
+16. Exam Preparation(8/10考試)
 
 Exam Tips:
+
 
 **One of the key tactic I followed when solving any question was to read the question and use paper and pencil to draw a rough architecture and focus on the areas that you need to improve**.
 
@@ -102,7 +107,9 @@ Whitepapers are key to understand
 
 
 
+
 ---
+## Show On
 ## Identity & Federation
 
 ### IAM
@@ -832,9 +839,11 @@ because cloudfront is outside of VPC! So you could use WAF or Geo-Restriction to
 - RAM is note included in EC2
 
 ### EC2 - Placement Groups
+`By default your ec2 would be put randomly!`
+`You can tell or hint aws where you wanna place `
 - Control the EC2 Instance placement strategy using placement groups
 - Group Strategies: 
-  - Cluster—clusters instances into a low-latency group in a single Availability Zone
+  - Cluster—clusters instances into a low-latency group in a single Availability Zone(same az good for HPC(high performance compute))
   - Spread—spreads instances across underlying hardware (max 7 instances per group per AZ) – critical applications
   - Partition—spreads instances across many different partitions (which rely on different sets of racks) within an AZ. Scales to 100s of EC2 instances per group (Hadoop, Cassandra, Kafka)
 - You can move an instance into or out of a placement group
@@ -920,18 +929,56 @@ because cloudfront is outside of VPC! So you could use WAF or Geo-Restriction to
 
 ### Route53 part1
 
+![](https://i.imgur.com/jcoNJja.png)
 ### Route53 part2
+
+
+Health Checks-
+Can be set up to pass / fail based on text in the frist 5120 bytes of the response
+
+Only pass 2xx and 3xx
+
+Health check can trigger CW alarm.
+
+Health check can't access private endpoints
+![](https://i.imgur.com/MeaVZdE.png)
+
 
 ### Comparison of Solutions Architecture
 - EC2 on its own with Elastic IP
 - EC2 with Route53
+   - DNS Based load-balancing
+   - Ability to use multiple instance
+   - Route53 TTL implies client may get outdated information
+   - Clients May have some logic to deal with hostname resolution failures.
+   - Adding an instance may not receive full trafic right away due to DNS TTL
 - ALB + ASG
+   - ALB is elastic but can't handle sudden, huge peak of demand (pre-warm)
+   - Could lost a few request if instance ar overloaded
+   - CW used for scaling
+   - Cross-Zone balancing for even traffic
+   - Target ultilization 40%-70%
 - ALB + ECS on EC2
+   - Tough to orchestrate ECS service autoscaling + ASG auto sclaing
 - ALB + ECS on Fargate
+   - Fargate have service auto scaling and is easy
 - ALB +Lambda
+   - Simple way to expose lambda fucntion as HTTP/S without all the features from API Gateway
+   - Good for hybrid microservices
+
 - API Gateway + Lambda
-- API Gateway + AWS Service
+   - Soft limit: 10000/s API Gateway, 1000 concurrent lambda
+   - API Gateway features: authentication, rate limiting, caching, etc
+   - Lambda cold start
+- API Gateway + AWS Service+ SQS
+  - Better to use API Gateway + SQS 
 - API Gateway + HTTP backend(ex:ALB)
+  - Use API Gateway features on top of custom HTTP backend(authentication, rate control, API keys, caching)
+  - Can connect to
+  - On-premise service
+  - ALB
+  - 3rd party HTTP service.
+ 
 ## Storage
 
 ### EBS
@@ -1000,6 +1047,7 @@ because cloudfront is outside of VPC! So you could use WAF or Geo-Restriction to
 - EFS Scale
   - 1000s of concurrent NFS clients, 10GB +/s throughput
   - Grow to Petabyte-scale network file system
+
 
 - Performance mode(set at EFS creation time)
   - General purpose(default):latency-sensitive use cases(web server, CMS, etc...)
@@ -1211,14 +1259,43 @@ ElasticCache- Store Aggregation Result, heavy-lifting computing
 
 ### SQS 
 
+* Serverless, managed queue, integrated with IAM
+* Can handle extreme scale, no provisioning required
+* Use to **decoupled** service
+* Message size of max 256 KB (use a pointer to S3 for large messages)
+* Can be read from EC2 (optional ASG), Lambda
+* SQS could be used as a write buffer for DynamoDB
+* SQS FIFO:
+   * receive messages in order they were sent
+   * 300 messages/s without batching, 3000 /s with batching
+* U can set up your own DLQ to provision the failure messages and analyze why it would fail.
+
 
 ### Amazon MQ
-
+* When migrating to the cloud, instead of re-engineering the application to use SQS and SNS, we can use Amazon MQ
+* Amazon MQ = managed Apache ActiveMQ
+* Amazon MQ doesn’t “scale” as much as SQS / SNS
+* Amazon MQ runs on a dedicated machine, can run in HA with failover
+* Amazon MQ has both queue feature (~SQS) and topic features (~SNS)
 
 ### SNS
 
+* The “event producer” only sends message to one SNS topic
+* As many “event receivers” (subscriptions) as we want to listen to the SNS topic notifications
+* Each subscriber to the topic will get all the messages (note: new feature to filter messages)
+* Up to 10,000,000 subscriptions per topic
+* 100,000 topics limit
+* Subscribers can be:
+  - SQS
+  - HTTP / HTTPS (with delivery retries – how many times)
+  - Lambda
+  - Emails
+  - SMS messages
+  - MobileNotifications(SNSMobilePush Android,Apple,FireOS,Windows...)
 
-## Data Engineering(07/05)
+
+
+## Data Engineering
 ### Kinesis Data Streams
 - Kinesis is a managed “data streaming” service
 - Great for application logs, metrics, IoT, clickstreams
@@ -1288,6 +1365,8 @@ ElasticCache- Store Aggregation Result, heavy-lifting computing
 ### Kinesis Data Analytics
 
 ### Streaming Architecture (very important)
+
+![](https://i.imgur.com/HYy719F.png)
 
 ### AWS Batch
 
@@ -1420,6 +1499,15 @@ Windows didn't have pathc line.
 
 ### Storage Gateway
 
+- Bridge between on-premise data and cloud data in S3
+- Use cases: disaster recovery, backup & restore, tiered storage
+- 3 types of Storage Gateway: 
+  - File Gateway
+  - Volume Gateway 
+  - Tape Gateway
+- Exam Tip:You need to know the differences between all 3!
+
+  
 
 
 ### Volume Gateway
@@ -1589,7 +1677,7 @@ Targets:
 
 
 
-### Disaster Recovery
+### Disaster Recovery (very very important)
 - Any event that has a negative impact on a company's business continuity or finance is a disaster
 - Disaster recovery(DR) is about preparing for and recovering from a disaster
 - What kind of disaster recovery?
@@ -1755,7 +1843,14 @@ VPC Basics:
   - Create an engress-only IGW in the public subnet
   - Add route table entry for the private subnet from ::/0 to the Egress-Only IGW.
 
+- VPC endpoint
+  - Interface Endpoint are Elastic Network Interface(ENI) with private IP address -> power by AWS PrivateLink
+  - A Gateway Endpoints is a gateway that is a target for a specific route in your route table, used for traffic destined for a supported AWS service. only S3 and dynamodb.
 
+
+### Different between VPC Peering and Transit Gateway.
+
+https://www.linkedin.com/pulse/what-transit-gateway-vpc-peering-difference-between-them-kumar/
 
 ## Other Services
 
@@ -1830,7 +1925,6 @@ IdPs are not limited to verifying human users. Technically, an IdP can authentic
 
 基於安全性考量，程式碼所發出的跨來源 HTTP 請求會受到限制。例如，XMLHttpRequest 及 Fetch 都遵守同源政策（same-origin policy）。這代表網路應用程式所使用的 API 除非使用 CORS 標頭，否則只能請求與應用程式相同網域的 HTTP 資源。
 
-
 ### What are Cookies?
 
 HTTP cookies are essential to the modern Internet but a vulnerability to your privacy. As a necessary part of web browsing, HTTP cookies help web developers give you more personal, convenient website visits. Cookies let websites remember you, your website logins, shopping carts and more. But they can also be a treasure trove of private info for criminals to spy on.
@@ -1871,4 +1965,49 @@ Kerberos was designed to provide secure authentication to services over an insec
 Data in transit, or data in motion, is data actively moving from one location to another such as across the internet or through a private network. Data protection in transit is the protection of this data while it’s traveling from network to network or being transferred from a local storage device to a cloud storage device – wherever data is moving, effective data protection measures for in transit data are critical as data is often considered less secure while in motion.
 
 Data at rest is data that is not actively moving from device to device or network to network such as data stored on a hard drive, laptop, flash drive, or archived/stored in some other way. Data protection at rest aims to secure inactive data stored on any device or network. While data at rest is sometimes considered to be less vulnerable than data in transit, attackers often find data at rest a more valuable target than data in motion. The risk profile for data in transit or data at rest depends on the security measures that are in place to secure data in either state.
+
+### SSO with ADFS
+https://www.cc.ntu.edu.tw/chinese/epaper/0025/20130620_2509.html
+
+### What is Microsoft AD?
+
+### What is iSCSI?
+In computing, iSCSI is an acronym for Internet Small Computer Systems Interface, an Internet Protocol (IP)-based storage networking standard for linking data storage facilities
+
+### What is Envelope Encyption?
+Envelope encryption
+When you encrypt your data, your data is protected, but you have to protect your encryption key. One strategy is to encrypt it. Envelope encryption is the practice of encrypting plaintext data with a data key, and then encrypting the data key under another key.
+
+You can even encrypt the data encryption key under another encryption key, and encrypt that encryption key under another encryption key. But, eventually, one key must remain in plaintext so you can decrypt the keys and your data. This top-level plaintext key encryption key is known as the master key.
+
+### 3 ELB details
+However, Classic Load Balancers and Application Load Balancers use the private IP addresses associated with their elastic network interfaces as the source IP address for requests forwarded to your web servers. For Network Load Balancers, the source IP address of these requests depends on the configuration of its target group.
+
+These IP addresses can be used for various purposes, such as allowing the load balancer traffic on the web servers and for request processing. It's a best practice to use security group referencing on the web server's security group inbound rules for allowing load balancer traffic from Classic Load Balancers or Application Load Balancers. However, because Network Load Balancers don't support security groups, based on the target group configurations, the IP addresses of the clients or the private IP addresses associated with the Network Load Balancers must be allowed on the web server's security group.
+
+### POSIX
+
+可移植作業系統介面（英語：Portable Operating System Interface，縮寫為POSIX）是IEEE為要在各種UNIX作業系統上執行軟體，而定義API的一系列互相關聯的標準的總稱，其正式稱呼為IEEE Std 1003，而國際標準名稱為ISO/IEC 9945。此標準源於一個大約開始於1985年的專案。POSIX這個名稱是由理察·斯托曼（RMS）應IEEE的要求而提議的一個易於記憶的名稱。它基本上是Portable Operating System Interface（可移植作業系統介面）的縮寫，而X則表明其對Unix API的傳承。
+
+Linux基本上逐步實現了POSIX相容，但並沒有參加正式的POSIX認證。[1]
+
+微軟的Windows NT聲稱部分實現了POSIX標準。
+
+當前的POSIX主要分為四個部分[2]：Base Definitions、System Interfaces、Shell and Utilities和Rationale。
+
+### 反向代理
+
+在電腦網路中是代理伺服器的一種。伺服器根據客戶端的請求，從其關聯的一組或多組後端伺服器（如Web伺服器）上取得資源，然後再將這些資源返回給客戶端，客戶端只會得知反向代理的IP位址，而不知道在代理伺服器後面的伺服器叢集的存在[1]。
+
+與前向代理不同，前向代理作為客戶端的代理，將從網際網路上取得的資源返回給一個或多個的客戶端，伺服器端（如Web伺服器）只知道代理的IP位址而不知道客戶端的IP位址；而反向代理是作為伺服器端（如Web伺服器）的代理使用，而不是客戶端。客戶端藉由前向代理可以間接存取很多不同網際網路伺服器（叢集）的資源，而反向代理是供很多客戶端都通過它間接存取不同後端伺服器上的資源，而不需要知道這些後端伺服器的存在，而以為所有資源都來自於這個反向代理伺服器。
+
+反向代理在現時的網際網路中並不少見，而另一些例子，像是CDN、SNI代理等，是反向代理結合DNS的一類延伸應用。
+
+### What is Blobs-
+二進位大型物件（英語：binary large object ，或英語：basic large object，縮寫為Blob、BLOB、BLOb），在資料庫管理系統中，將二進位資料儲存為一個單一個體的集合。Blob通常是影像、聲音或多媒體檔案。
+
+它由迪吉多公司的工程師吉姆·史塔基（Jim Starkey）發明。
+
+### Dependency Mapping
+Businesses today have several applications dependent on different servers and separate network devices. Application dependency mapping is the process of figuring out which applications are dependent on what, in the context of your entire network infrastructure. Following application discovery, dependency mapping looks at what applications you’ve installed on your devices, and then looks at how these applications are interconnected.
 
